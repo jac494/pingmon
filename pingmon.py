@@ -41,7 +41,7 @@ def iso8601_datetime(datestamp=None):
     now = datestamp or datetime.datetime.now()
     return (
         f"{now.year}{str(now.month).zfill(2)}{str(now.day).zfill(2)}"
-        f"{str(now.hour).zfill(2)}{str(now.minute).zfill(2)}"
+        f"{str(now.hour).zfill(2)}{str(now.minute).zfill(2)}{str(now.second).zfill(2)}"
     )
 
 
@@ -57,12 +57,10 @@ def main(monitor_host):
         ),
         encoding=CONFIG.LOGGING.ENCODING,
     )
-    results = []
     while True:
         try:
             start = time.time()
-            result = ping_host(monitor_host)
-            results.append(result)
+            ping_host(monitor_host)
             end = time.time()
             sleep_time = CONFIG.WAIT_SECONDS - (end - start)
             logging.debug(f"{sleep_time=}")
@@ -78,8 +76,13 @@ def main(monitor_host):
 
 def ping_host(host):
     logging.info(f"sending {CONFIG.ICMPLIB_PING.COUNT} ICMP echo request(s) to {host=}")
+    start_time = iso8601_datetime()
     result = icmplib.ping(address=host, interval=CONFIG.ICMPLIB_PING.INTERVAL, count=CONFIG.ICMPLIB_PING.COUNT, timeout=CONFIG.ICMPLIB_PING.TIMEOUT, privileged=False)
-    logging.info(RESULT_STR_TEMPLATE.format(result=result))
+    end_time = iso8601_datetime()
+    logging_str = (
+        f"{start_time=} {end_time=} {RESULT_STR_TEMPLATE.format(result=result)}"
+    )
+    logging.info(logging_str)
 
 
 if __name__ == "__main__":
