@@ -18,3 +18,12 @@ pip install -r requirements.txt
 ```
 
 Use `./pingmon.py --help` for additional information.
+
+I wish I could build this in but so far it is just wishful (maybe by building as a daemon and then providing a cli to communicate with and send commands to/read commands from a common db):
+
+```sh
+# start pingmon and background it
+nohup ./pingmon <monitor_host> &
+# now detach it from the current process
+disown
+```

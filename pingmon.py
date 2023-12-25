@@ -16,10 +16,20 @@ CONFIG = SimpleNamespace(
         LOGFILE_TEMPLATE="logs/pingmon.{datestamp}.{monitor_host}.log",
         ENCODING="utf-8",
     ),
-    WAIT_SECONDS=1.0,
+    # current config is set to send 60 icmp echo requests ideally within a
+    # 60-second window. if they all come back quickly (less than 1 second each)
+    # then it will likely take less than 60s, so wait for the remainder of
+    # that minute.
+    # this is kinda bad because loss could happen in the time that the monitor
+    # is sleeping rather than spacing all pings out throughout the 60s window
+    # which would see the loss throughout any portion of that timeframe
+    # maybe do less here and allow a monitoring system (like prometheus)
+    # to make aggreegation and rollup decisions and just send a ping once per second
+    # or something and report the values
+    WAIT_SECONDS=60.0,
     ICMPLIB_PING=SimpleNamespace(
         INTERVAL=1,
-        COUNT=20,
+        COUNT=60,
         TIMEOUT=1,
     ),
 )
@@ -33,15 +43,20 @@ RESULT_STR_TEMPLATE = " ".join(
         "avg_rtt={result.avg_rtt}",
         "jitter={result.jitter}",
         "min_rtt={result.min_rtt}",
-        "max_rtt={result.max_rtt}"
+        "max_rtt={result.max_rtt}",
     )
 )
+
 
 def iso8601_datetime(datestamp=None):
     now = datestamp or datetime.datetime.now()
     return (
-        f"{now.year}{str(now.month).zfill(2)}{str(now.day).zfill(2)}"
-        f"{str(now.hour).zfill(2)}{str(now.minute).zfill(2)}{str(now.second).zfill(2)}"
+        f"{now.year}"
+        f"{str(now.month).zfill(2)}"
+        f"{str(now.day).zfill(2)}"
+        f"{str(now.hour).zfill(2)}"
+        f"{str(now.minute).zfill(2)}"
+        f"{str(now.second).zfill(2)}"
     )
 
 
@@ -77,7 +92,13 @@ def main(monitor_host):
 def ping_host(host):
     logging.info(f"sending {CONFIG.ICMPLIB_PING.COUNT} ICMP echo request(s) to {host=}")
     start_time = iso8601_datetime()
-    result = icmplib.ping(address=host, interval=CONFIG.ICMPLIB_PING.INTERVAL, count=CONFIG.ICMPLIB_PING.COUNT, timeout=CONFIG.ICMPLIB_PING.TIMEOUT, privileged=False)
+    result = icmplib.ping(
+        address=host,
+        interval=CONFIG.ICMPLIB_PING.INTERVAL,
+        count=CONFIG.ICMPLIB_PING.COUNT,
+        timeout=CONFIG.ICMPLIB_PING.TIMEOUT,
+        privileged=False,
+    )
     end_time = iso8601_datetime()
     logging_str = (
         f"{start_time=} {end_time=} {RESULT_STR_TEMPLATE.format(result=result)}"
