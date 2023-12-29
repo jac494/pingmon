@@ -60,6 +60,23 @@ def iso8601_datetime(datestamp=None):
     )
 
 
+def ping_host(host):
+    logging.info(f"sending {CONFIG.ICMPLIB_PING.COUNT} ICMP echo request(s) to {host=}")
+    start_time = iso8601_datetime()
+    result = icmplib.ping(
+        address=host,
+        interval=CONFIG.ICMPLIB_PING.INTERVAL,
+        count=CONFIG.ICMPLIB_PING.COUNT,
+        timeout=CONFIG.ICMPLIB_PING.TIMEOUT,
+        privileged=False,
+    )
+    end_time = iso8601_datetime()
+    logging_str = (
+        f"{start_time=} {end_time=} {RESULT_STR_TEMPLATE.format(result=result)}"
+    )
+    logging.info(logging_str)
+
+
 @click.command()
 @click.argument("monitor_host")
 def main(monitor_host):
@@ -87,23 +104,6 @@ def main(monitor_host):
             )
             click.echo("Received keyboard interrupt")
             sys.exit(0)
-
-
-def ping_host(host):
-    logging.info(f"sending {CONFIG.ICMPLIB_PING.COUNT} ICMP echo request(s) to {host=}")
-    start_time = iso8601_datetime()
-    result = icmplib.ping(
-        address=host,
-        interval=CONFIG.ICMPLIB_PING.INTERVAL,
-        count=CONFIG.ICMPLIB_PING.COUNT,
-        timeout=CONFIG.ICMPLIB_PING.TIMEOUT,
-        privileged=False,
-    )
-    end_time = iso8601_datetime()
-    logging_str = (
-        f"{start_time=} {end_time=} {RESULT_STR_TEMPLATE.format(result=result)}"
-    )
-    logging.info(logging_str)
 
 
 if __name__ == "__main__":
